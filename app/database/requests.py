@@ -16,7 +16,7 @@ async def send_photo_to_user(bot, chat_id, photo_url, caption):
     await bot.send_photo(chat_id=chat_id, photo=photo_url, caption=caption)
 
 
-async def get_user(tg_id: int):
+async def get_day(tg_id: int):
     async with async_session() as session:
         day = await session.scalar(select(User.day).where(User.tg_id == tg_id))
         return day

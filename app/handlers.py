@@ -14,7 +14,7 @@ router = Router()
 async def bot_start(message: Message):
     await rq.set_user(message.from_user.id)
     bot = message.bot
-    day = await rq.get_user(message.from_user.id)
+    day = await rq.get_day(message.from_user.id)
     if day == 0:
         photo_url = "https://i.pinimg.com/736x/09/20/6b/09206b54664edda9193e1fdad221b7c4--hermione-cat-comics.jpg"
         caption = "Всем привет)\nТут чето типо описания будет"
