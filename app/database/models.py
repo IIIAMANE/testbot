@@ -22,6 +22,7 @@ class User(Base):
     tg_id: Mapped[int] = mapped_column(BigInteger)
 
     day: Mapped[int] = mapped_column(default=0, nullable=False)
+    comments: Mapped[int] = mapped_column(default=0, nullable=True)
 
 
 async def async_main():

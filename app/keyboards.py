@@ -5,6 +5,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 async def are_you_ready_button():
     keyboard = InlineKeyboardBuilder()
-    keyboard.add(InlineKeyboardButton(text="да", callback_data="go_to_day_1"))
-    keyboard.add(InlineKeyboardButton(text="нет", callback_data="user_not_ready"))
+    keyboard.add(InlineKeyboardButton(text="да", callback_data="first_yes_button"))
+    keyboard.add(InlineKeyboardButton(text="нет", callback_data="first_no_button"))
     return keyboard.adjust(2).as_markup()

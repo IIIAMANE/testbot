@@ -1,6 +1,7 @@
 from app.database.models import async_session
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.database.models import User
+from text import days_dictionary
 
 
 async def set_user(tg_id: int) -> None:
@@ -20,3 +21,25 @@ async def get_day(tg_id: int):
     async with async_session() as session:
         day = await session.scalar(select(User.day).where(User.tg_id == tg_id))
         return day
+
+
+async def get_day(tg_id: int):
+    async with async_session() as session:
+        day = await session.scalar(select(User.day).where(User.tg_id == tg_id))
+        return day
+
+
+async def increment_day(tg_id: int):
+    async with async_session() as session:
+        await session.execute(
+            update(User).where(User.tg_id == tg_id).values(day=User.day + 1)
+        )
+        await session.commit()
+
+
+async def send_day_text(user_id, bot):
+    day = await get_day(user_id)
+    message = days_dictionary.get(day, "Нет информации по этому дню")
+    await bot.send_message(chat_id=user_id, text=message)
+    await increment_day(user_id)
+
