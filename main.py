@@ -1,3 +1,9 @@
+# .venv\Scripts\activate
+# python main.py
+# git add . 
+# git commit -m "commit"
+# git push
+
 import os
 import asyncio
 from aiogram import Bot, Dispatcher
