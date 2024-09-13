@@ -3,7 +3,6 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job
-from app.state import Comment_for_day
 
 
 import app.keyboards as kb
@@ -48,12 +47,12 @@ async def main_day_handler(callback: CallbackQuery):
 
 @router.callback_query(F.data == "comment_button")
 async def comment_text(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(Comment_for_day.user_comment)
+    await state.set_state(st.Comment_for_day.user_comment)
     await callback.answer("")
     await callback.message.answer("Напиши свой комментарий к сегодняшнему дню")
 
 
-@router.message(Comment_for_day.user_comment)
+@router.message(st.Comment_for_day.user_comment)
 async def save_user_comment(message: Message, state: FSMContext):
     await state.update_data(comment_text = message.text)
     data = await state.get_data()

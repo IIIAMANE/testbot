@@ -58,10 +58,8 @@ async def save_user_comment(tg_id: int, comment: str) -> None:
         user = await session.scalar(select(User).where(User.tg_id == tg_id))
         
         if user.comments:
-            # Добавляем новый комментарий к существующим, начиная с новой строки
             updated_comments = f"{user.comments}\n\n{day}: {comment}"
         else:
-            # Если комментариев нет, добавляем первый комментарий
             updated_comments = f"{day}: {comment}"
 
         await session.execute(update(User).where(User.tg_id == tg_id).values(comments=updated_comments))
