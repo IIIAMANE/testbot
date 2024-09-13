@@ -42,6 +42,7 @@ async def user_not_ready(callback: CallbackQuery):
 @router.callback_query(F.data == "first_yes_button")
 async def main_day_handler(callback: CallbackQuery):
     await callback.answer("")
+    await callback.message.answer("оставь коммент", reply_markup= await kb.keyboard_for_comments())
     await rq.send_day_text(callback.from_user.id, callback.bot)
     add_send_day_text_job(callback.from_user.id, callback.bot)
 
