@@ -38,8 +38,6 @@ async def user_not_ready(callback: CallbackQuery):
     await callback.message.answer("Пипяу..")
 
 
-# надо второе сообщение отправлять типочкам и к нему клеить клаву
-# оставь отзыв чет такое или как день прошел напиши там пиу пиу
 @router.callback_query(F.data == "first_yes_button")
 async def main_day_handler(callback: CallbackQuery):
     await callback.answer("")
