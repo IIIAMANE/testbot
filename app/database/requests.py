@@ -2,6 +2,7 @@ from app.database.models import async_session
 from sqlalchemy import select, update
 from app.database.models import User
 from text import days_dictionary
+import app.keyboards as kb
 
 
 async def set_user(tg_id: int) -> None:
@@ -43,3 +44,6 @@ async def send_day_text(user_id, bot):
     await bot.send_message(chat_id=user_id, text=message)
     await increment_day(user_id)
 
+
+async def send_comment_keyboard(user_id: int, bot):
+    await bot.send_message(chat_id=user_id,text="оставь коммент",reply_markup=await kb.keyboard_for_comments())

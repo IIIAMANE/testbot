@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
-from app.scheduler import add_send_day_text_job
+from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job
 from app.state import Comment_for_day
 
 
@@ -28,6 +28,7 @@ async def bot_start(message: Message):
         await message.answer("Хотите ли вы пройти нашего бота\nну чет такое хз о.О", reply_markup=await kb.are_you_ready_button())
     else:
         add_send_day_text_job(message.from_user.id, bot)
+        schedule_comment_keyboard_job(message.from_user.id, bot)
         await message.answer("Привет! Продолжаем с того места, где ты остановился.")
 
 
@@ -42,10 +43,9 @@ async def user_not_ready(callback: CallbackQuery):
 @router.callback_query(F.data == "first_yes_button")
 async def main_day_handler(callback: CallbackQuery):
     await callback.answer("")
-    await callback.message.answer("оставь коммент", reply_markup= await kb.keyboard_for_comments())
     await rq.send_day_text(callback.from_user.id, callback.bot)
     add_send_day_text_job(callback.from_user.id, callback.bot)
-
+    schedule_comment_keyboard_job(callback.from_user.id, callback.bot)
 
 
 @router.callback_query(F.data == "comment_button")
