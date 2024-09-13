@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger
+from sqlalchemy import BigInteger, Text
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -22,7 +22,7 @@ class User(Base):
     tg_id: Mapped[int] = mapped_column(BigInteger)
 
     day: Mapped[int] = mapped_column(default=0, nullable=False)
-    comments: Mapped[int] = mapped_column(default=0, nullable=True)
+    comments: Mapped[str] = mapped_column(Text, nullable=True)
 
 
 async def async_main():

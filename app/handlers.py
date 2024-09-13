@@ -57,8 +57,10 @@ async def comment_text(callback: CallbackQuery, state: FSMContext):
 async def save_user_comment(message: Message, state: FSMContext):
     await state.update_data(comment_text = message.text)
     data = await state.get_data()
+    await rq.save_user_comment(message.from_user.id, data.get('comment_text'))
     await state.clear()
     print(data.get('comment_text'))
+    await message.answer("Ваш комментарий доставлен")
 
 
     

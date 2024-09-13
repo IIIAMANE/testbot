@@ -1,8 +1,11 @@
 from app.database.models import async_session
 from sqlalchemy import select, update
+
 from app.database.models import User
 from text import days_dictionary
+
 import app.keyboards as kb
+
 
 
 async def set_user(tg_id: int) -> None:
@@ -47,3 +50,19 @@ async def send_day_text(user_id, bot):
 
 async def send_comment_keyboard(user_id: int, bot):
     await bot.send_message(chat_id=user_id,text="оставь коммент", reply_markup=await kb.keyboard_for_comments())
+
+
+async def save_user_comment(tg_id: int, comment: str) -> None:
+    async with async_session() as session:
+        day = await session.scalar(select(User.day).where(User.tg_id == tg_id))
+        user = await session.scalar(select(User).where(User.tg_id == tg_id))
+        
+        if user.comments:
+            # Добавляем новый комментарий к существующим, начиная с новой строки
+            updated_comments = f"{user.comments}\n\n{day}: {comment}"
+        else:
+            # Если комментариев нет, добавляем первый комментарий
+            updated_comments = f"{day}: {comment}"
+
+        await session.execute(update(User).where(User.tg_id == tg_id).values(comments=updated_comments))
+        await session.commit()
