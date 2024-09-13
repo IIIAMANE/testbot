@@ -46,4 +46,4 @@ async def send_day_text(user_id, bot):
 
 
 async def send_comment_keyboard(user_id: int, bot):
-    await bot.send_message(chat_id=user_id,text="оставь коммент",reply_markup=await kb.keyboard_for_comments())
+    await bot.send_message(chat_id=user_id,text="оставь коммент", reply_markup=await kb.keyboard_for_comments())
