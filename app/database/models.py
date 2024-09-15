@@ -30,8 +30,8 @@ class Message(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id: Mapped[int] = mapped_column(BigInteger)
-    message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)  # ID сообщения из Telegram
-    text: Mapped[str] = mapped_column(String, nullable=False)  # Текст сообщения
+    message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
 
 

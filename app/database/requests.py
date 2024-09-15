@@ -73,10 +73,10 @@ async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: d
         user = await session.scalar(select(User).where(User.tg_id == tg_id))
         
         new_message = Message(
-            tg_id=tg_id,           # ID пользователя
-            message_id=message_id,     # ID сообщения из Telegram
-            text=text,                 # Текст сообщения
-            timestamp=timestamp        # Время отправки
+            tg_id=tg_id,
+            message_id=message_id,
+            text=text,
+            timestamp=timestamp
         )
         
         session.add(new_message)

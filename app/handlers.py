@@ -1,9 +1,8 @@
 import pytz
-from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import CommandStart, Command, StateFilter
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 
 from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job
@@ -72,7 +71,7 @@ async def state_for_write_curator(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("Когда напишешь свое сообщение(или сообщения) напиши /end, чтобы отправить их куратору")
 
     
-@router.message(StateFilter(st.Write_to_curator.user_message))
+@router.message(st.Write_to_curator.user_message)
 async def collect_user_message(message: Message, state: FSMContext):
     text = message.text
     if text != '/end':
@@ -102,10 +101,10 @@ async def collect_user_message(message: Message, state: FSMContext):
         
         for msg in messages:
             await rq.save_user_message(
-                tg_id=message.from_user.id,       # ID пользователя
-                message_id=msg['message_id'],     # ID сообщения
-                text=msg['text'],                 # Текст сообщения
-                timestamp=msg['timestamp']        # Время отправки в MSK
+                tg_id=message.from_user.id,
+                message_id=msg['message_id'],
+                text=msg['text'],
+                timestamp=msg['timestamp']
             )
 
         await message.answer("Все сообщения отправлены куратору.")
