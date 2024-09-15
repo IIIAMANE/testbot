@@ -14,3 +14,9 @@ async def keyboard_for_comments():
     keyboard = InlineKeyboardBuilder()
     keyboard.add(InlineKeyboardButton(text="Здесь можно оставить комментарий", callback_data="comment_button"))
     return keyboard.adjust(2).as_markup()
+
+
+async def keyboard_for_communication():
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(InlineKeyboardButton(text="Связь с куратором", callback_data="communicate_button"))
+    return keyboard.adjust(2).as_markup()

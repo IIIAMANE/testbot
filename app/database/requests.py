@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from app.database.models import async_session
 from sqlalchemy import select, update
 
-from app.database.models import User
+from app.database.models import User, Message
 from text import days_dictionary
 
 import app.keyboards as kb
@@ -44,7 +46,7 @@ async def increment_day(tg_id: int):
 async def send_day_text(user_id, bot):
     day = await get_day(user_id)
     message = days_dictionary.get(day, "Нет информации по этому дню")
-    await bot.send_message(chat_id=user_id, text=message)
+    await bot.send_message(chat_id=user_id,text=message, reply_markup=await kb.keyboard_for_communication())
     await increment_day(user_id)
 
 
@@ -63,4 +65,20 @@ async def save_user_comment(tg_id: int, comment: str) -> None:
             updated_comments = f"{day}: {comment}"
 
         await session.execute(update(User).where(User.tg_id == tg_id).values(comments=updated_comments))
+        await session.commit()
+
+
+async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: datetime) -> None:
+    async with async_session() as session:
+        user = await session.scalar(select(User).where(User.tg_id == tg_id))
+        
+        new_message = Message(
+            tg_id=tg_id,           # ID пользователя
+            message_id=message_id,     # ID сообщения из Telegram
+            text=text,                 # Текст сообщения
+            timestamp=timestamp        # Время отправки
+        )
+        
+        session.add(new_message)
+        
         await session.commit()

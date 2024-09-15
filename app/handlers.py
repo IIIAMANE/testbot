@@ -1,6 +1,9 @@
+import pytz
+from datetime import datetime
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
 from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job
@@ -59,11 +62,56 @@ async def save_user_comment(message: Message, state: FSMContext):
     data = await state.get_data()
     await rq.save_user_comment(message.from_user.id, data.get('comment_text'))
     await state.clear()
-    print(data.get('comment_text'))
     await message.answer("Ваш комментарий доставлен")
 
 
+@router.callback_query(F.data == "communicate_button")
+async def state_for_write_curator(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(st.Write_to_curator.user_message)
+    await callback.answer("")
+    await callback.message.answer("Когда напишешь свое сообщение(или сообщения) напиши /end, чтобы отправить их куратору")
+
     
+@router.message(StateFilter(st.Write_to_curator.user_message))
+async def collect_user_message(message: Message, state: FSMContext):
+    text = message.text
+    if text != '/end':
+        data = await state.get_data()
+        messages = data.get("messages", [])
+        
+        timestamp_utc = message.date.replace(tzinfo=pytz.UTC)
+        timestamp_msk = timestamp_utc.astimezone(pytz.timezone('Europe/Moscow'))
+        
+        messages.append({
+            'message_id': message.message_id,
+            'text': message.text,
+            'timestamp': timestamp_msk
+        })
+        await state.update_data(messages=messages)
+        await message.answer("Сообщение сохранено.\nНапиши еще, или отправь /end для завершения.")
+
+
+    elif text == '/end':
+        data = await state.get_data()
+        messages = data.get('messages', [])
+
+        if not messages:
+            await message.answer("Нет сообщений для отправки.")
+            await state.clear()
+            return
+        
+        for msg in messages:
+            await rq.save_user_message(
+                tg_id=message.from_user.id,       # ID пользователя
+                message_id=msg['message_id'],     # ID сообщения
+                text=msg['text'],                 # Текст сообщения
+                timestamp=msg['timestamp']        # Время отправки в MSK
+            )
+
+        await message.answer("Все сообщения отправлены куратору.")
+        await state.clear()
+
+
 
 
 
