@@ -70,15 +70,6 @@ async def save_user_comment(tg_id: int, comment: str) -> None:
 
 async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: datetime) -> None:
     async with async_session() as session:
-        user = await session.scalar(select(User).where(User.tg_id == tg_id))
-        
-        new_message = Message(
-            tg_id=tg_id,
-            message_id=message_id,
-            text=text,
-            timestamp=timestamp
-        )
-        
+        new_message = Message(tg_id=tg_id, message_id=message_id, text=text, timestamp=timestamp)
         session.add(new_message)
-        
         await session.commit()

@@ -12,8 +12,6 @@ import app.keyboards as kb
 import app.database.requests as rq
 import app.state as st
 
-from text import days_dictionary
-
 router = Router()
 
 
@@ -101,11 +99,7 @@ async def collect_user_message(message: Message, state: FSMContext):
         
         for msg in messages:
             await rq.save_user_message(
-                tg_id=message.from_user.id,
-                message_id=msg['message_id'],
-                text=msg['text'],
-                timestamp=msg['timestamp']
-            )
+                tg_id=message.from_user.id, message_id=msg['message_id'], text=msg['text'], timestamp=msg['timestamp'])
 
         await message.answer("Все сообщения отправлены куратору.")
         await state.clear()
