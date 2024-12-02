@@ -3,7 +3,7 @@ from datetime import datetime
 from app.database.models import async_session
 from sqlalchemy import select, update
 
-from app.database.models import User, Message
+from app.database.models import User, Message, User_state
 from text import days_dictionary
 
 import app.keyboards as kb
@@ -51,7 +51,11 @@ async def send_day_text(user_id, bot):
 
 
 async def send_comment_keyboard(user_id: int, bot):
-    await bot.send_message(chat_id=user_id,text="оставь коммент", reply_markup=await kb.keyboard_for_comments())
+    await bot.send_message(chat_id=user_id,text="оставь коммент, если хочешь", reply_markup=await kb.keyboard_for_comments())
+
+
+async def send_state_keyboard(user_id: int, bot):
+    await bot.send_message(chat_id=user_id,text="оцени состояние квадратиками если хочешь", reply_markup=await kb.keyboard_for_rate_user_state())
 
 
 async def save_user_comment(tg_id: int, comment: str) -> None:
@@ -66,6 +70,34 @@ async def save_user_comment(tg_id: int, comment: str) -> None:
 
         await session.execute(update(User).where(User.tg_id == tg_id).values(comments=updated_comments))
         await session.commit()
+
+
+async def save_user_state(tg_id: int, rate: str) -> None:
+    async with async_session() as session:
+        # Получаем день из таблицы User для этого пользователя
+        user = await session.scalar(select(User).where(User.tg_id == tg_id))
+        
+        # Если пользователь не найден, возвращаемся
+        if not user:
+            return
+        
+        day = user.day  # Получаем день пользователя из таблицы User
+        
+        # Получаем состояние пользователя из таблицы User_state
+        user_state = await session.scalar(select(User_state).where(User_state.tg_id == tg_id))
+
+        if user_state:
+            # Обновляем состояние, добавляя новый день:стейт
+            updated_state = f"{user_state.state}, {day}:{rate}"
+            await session.execute(update(User_state).where(User_state.tg_id == tg_id).values(state=updated_state))
+        else:
+            # Добавляем новое состояние, если его нет
+            updated_state = f"{day}:{rate}"
+            new_state = User_state(tg_id=tg_id, day=day, state=updated_state)
+            session.add(new_state)
+        
+        await session.commit()
+
 
 
 async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: datetime) -> None:

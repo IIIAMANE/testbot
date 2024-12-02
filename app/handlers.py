@@ -2,7 +2,7 @@ import pytz
 
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 
 from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job
@@ -20,7 +20,7 @@ async def bot_start(message: Message):
     await rq.set_user(message.from_user.id)
     bot = message.bot
     day = await rq.get_day(message.from_user.id)
-
+    await message.answer("юпийо(тестовое сообщение, чтобы мейн клаву прицепить)", reply_markup=kb.main)
     if day == 0:
         photo_url = "https://i.pinimg.com/736x/09/20/6b/09206b54664edda9193e1fdad221b7c4--hermione-cat-comics.jpg"
         caption = "Всем привет)\nТут чето типо описания будет"
@@ -53,6 +53,14 @@ async def comment_text(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("Напиши свой комментарий к сегодняшнему дню")
 
 
+@router.callback_query(F.data.startswith("state_"))
+async def handle_rate(callback: CallbackQuery):
+    user_state = callback.data.split("_")[1]
+    await callback.answer("")
+    await callback.message.answer(f'негры {user_state}')
+    await rq.save_user_state(callback.from_user.id, user_state)
+
+
 @router.message(st.Comment_for_day.user_comment)
 async def save_user_comment(message: Message, state: FSMContext):
     await state.update_data(comment_text = message.text)
@@ -66,9 +74,15 @@ async def save_user_comment(message: Message, state: FSMContext):
 async def state_for_write_curator(callback: CallbackQuery, state: FSMContext):
     await state.set_state(st.Write_to_curator.user_message)
     await callback.answer("")
-    await callback.message.answer("Когда напишешь свое сообщение(или сообщения) напиши /end, чтобы отправить их куратору")
+    await callback.message.answer("Когда напишешь свое сообщение напиши /end, чтобы отправить их куратору(для отмены введи /cancel)")
 
-    
+
+@router.message(Command("cancel"))
+async def cancel_state(message: Message, state: FSMContext):
+    await message.answer("Отправка сообщения отменена")
+    await state.clear()
+
+
 @router.message(st.Write_to_curator.user_message)
 async def collect_user_message(message: Message, state: FSMContext):
     text = message.text
@@ -85,7 +99,7 @@ async def collect_user_message(message: Message, state: FSMContext):
             'timestamp': timestamp_msk
         })
         await state.update_data(messages=messages)
-        await message.answer("Сообщение сохранено.\nНапиши еще, или отправь /end для завершения.")
+        await message.answer("Сообщение сохранено.\nНапиши еще, или отправь /end для завершения(если передумал отправь /cancel)")
 
 
     elif text == '/end':
@@ -103,6 +117,16 @@ async def collect_user_message(message: Message, state: FSMContext):
 
         await message.answer("Все сообщения отправлены куратору.")
         await state.clear()
+
+    elif text == '/cancel':
+        await message.answer("Отправка сообщения отменена")
+        await state.clear()
+
+
+@router.message(F.text == "Связь с куратором")
+async def communication_to_curator(message: Message, state: FSMContext):
+    await state.set_state(st.Write_to_curator.user_message)
+    await message.answer("Когда напишешь свое сообщение напиши /end, чтобы отправить их куратору(для отмены введи /cancel)")
 
 
 

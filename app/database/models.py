@@ -25,6 +25,16 @@ class User(Base):
     comments: Mapped[str] = mapped_column(Text, nullable=True)
 
 
+class User_state(Base):
+    __tablename__ = "state"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger)
+
+    day: Mapped[int] = mapped_column(default=0, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=True)
+
+
 class Message(Base):
     __tablename__ = "messages"
 
@@ -33,7 +43,6 @@ class Message(Base):
     message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
-
 
 
 async def async_main():
