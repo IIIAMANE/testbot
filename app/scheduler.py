@@ -1,6 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from app.database.requests import send_day_text, send_comment_keyboard
+from app.database.requests import send_day_text, send_comment_keyboard, send_state_keyboard
 
 scheduler = AsyncIOScheduler()
 
@@ -10,6 +10,12 @@ def add_send_day_text_job(user_id, bot):
     job_id = f"send_day_text_{user_id}"
     if scheduler.get_job(job_id) is None:
         scheduler.add_job(send_day_text, trigger=CronTrigger(hour=8, minute=0), args=[user_id, bot], id=job_id)
+
+
+def add_send_state_keyboard(user_id, bot):
+    job_id = f"send_state_keyboard_{user_id}"
+    if scheduler.get_job(job_id) is None:
+        scheduler.add_job(send_state_keyboard, trigger=CronTrigger(hour=21, minute=0), args=[user_id, bot], id=job_id)
 
 
 def schedule_comment_keyboard_job(user_id, bot):

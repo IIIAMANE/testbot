@@ -27,12 +27,12 @@ async def get_day(tg_id: int):
     async with async_session() as session:
         day = await session.scalar(select(User.day).where(User.tg_id == tg_id))
         return day
+    
 
-
-async def get_day(tg_id: int):
+async def get_user_state_history(tg_id: int):
     async with async_session() as session:
-        day = await session.scalar(select(User.day).where(User.tg_id == tg_id))
-        return day
+        user_state_history = await session.scalar(select(User_state.state).where(User_state.tg_id == tg_id))
+        return user_state_history
 
 
 async def increment_day(tg_id: int):
@@ -51,11 +51,11 @@ async def send_day_text(user_id, bot):
 
 
 async def send_comment_keyboard(user_id: int, bot):
-    await bot.send_message(chat_id=user_id,text="оставь коммент, если хочешь", reply_markup=await kb.keyboard_for_comments())
+    await bot.send_message(chat_id=user_id,text="оставь коммент(если хочешь)", reply_markup=await kb.keyboard_for_comments())
 
 
 async def send_state_keyboard(user_id: int, bot):
-    await bot.send_message(chat_id=user_id,text="оцени состояние квадратиками если хочешь", reply_markup=await kb.keyboard_for_rate_user_state())
+    await bot.send_message(chat_id=user_id,text="оцени состояние квадратиками(если хочешь)", reply_markup=await kb.keyboard_for_rate_user_state())
 
 
 async def save_user_comment(tg_id: int, comment: str) -> None:
@@ -74,30 +74,19 @@ async def save_user_comment(tg_id: int, comment: str) -> None:
 
 async def save_user_state(tg_id: int, rate: str) -> None:
     async with async_session() as session:
-        # Получаем день из таблицы User для этого пользователя
         user = await session.scalar(select(User).where(User.tg_id == tg_id))
-        
-        # Если пользователь не найден, возвращаемся
-        if not user:
-            return
-        
-        day = user.day  # Получаем день пользователя из таблицы User
-        
-        # Получаем состояние пользователя из таблицы User_state
+        day = user.day
         user_state = await session.scalar(select(User_state).where(User_state.tg_id == tg_id))
 
         if user_state:
-            # Обновляем состояние, добавляя новый день:стейт
             updated_state = f"{user_state.state}, {day}:{rate}"
             await session.execute(update(User_state).where(User_state.tg_id == tg_id).values(state=updated_state))
         else:
-            # Добавляем новое состояние, если его нет
             updated_state = f"{day}:{rate}"
-            new_state = User_state(tg_id=tg_id, day=day, state=updated_state)
+            new_state = User_state(tg_id=tg_id, state=updated_state)
             session.add(new_state)
         
         await session.commit()
-
 
 
 async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: datetime) -> None:

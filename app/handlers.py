@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 
-from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job
+from app.scheduler import add_send_day_text_job,schedule_comment_keyboard_job, add_send_state_keyboard
 
 
 import app.keyboards as kb
@@ -20,6 +20,7 @@ async def bot_start(message: Message):
     await rq.set_user(message.from_user.id)
     bot = message.bot
     day = await rq.get_day(message.from_user.id)
+    await message.answer("негры", reply_markup=await kb.keyboard_for_rate_user_state())
     await message.answer("юпийо(тестовое сообщение, чтобы мейн клаву прицепить)", reply_markup=kb.main)
     if day == 0:
         photo_url = "https://i.pinimg.com/736x/09/20/6b/09206b54664edda9193e1fdad221b7c4--hermione-cat-comics.jpg"
@@ -29,6 +30,7 @@ async def bot_start(message: Message):
     else:
         add_send_day_text_job(message.from_user.id, bot)
         schedule_comment_keyboard_job(message.from_user.id, bot)
+        add_send_state_keyboard(message.from_user.id, bot)
         await message.answer("Привет! Продолжаем с того места, где ты остановился.")
 
 
@@ -44,6 +46,7 @@ async def main_day_handler(callback: CallbackQuery):
     await rq.send_day_text(callback.from_user.id, callback.bot)
     add_send_day_text_job(callback.from_user.id, callback.bot)
     schedule_comment_keyboard_job(callback.from_user.id, callback.bot)
+    add_send_state_keyboard(callback.from_user.id, callback.bot)
 
 
 @router.callback_query(F.data == "comment_button")
@@ -128,6 +131,22 @@ async def communication_to_curator(message: Message, state: FSMContext):
     await state.set_state(st.Write_to_curator.user_message)
     await message.answer("Когда напишешь свое сообщение напиши /end, чтобы отправить их куратору(для отмены введи /cancel)")
 
+
+@router.message(F.text == "Вывести историю состояний")
+async def print_user_state_history(message: Message, state: FSMContext):
+    state_history = await rq.get_user_state_history(message.from_user.id)
+    state_emoji = {1: "🟥", 2: "🟧", 3: "🟨", 4: "🟩", 5: "🟦"}
+    lines = state_history.split(",")
+    result = []
+    for line in lines:
+        line = line.split(":")
+        result.append('-------------------------------')
+        result.append(f"день: {line[0]}, состояние: {state_emoji.get(int(line[1]))}")
+    formatted_history = "\n".join(result)
+
+    await message.answer(formatted_history)
+    
+    
 
 
 

@@ -31,7 +31,6 @@ class User_state(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id: Mapped[int] = mapped_column(BigInteger)
 
-    day: Mapped[int] = mapped_column(default=0, nullable=False)
     state: Mapped[str] = mapped_column(Text, nullable=True)
 
 

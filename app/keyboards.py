@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 main = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Связь с куратором")],
+        [KeyboardButton(text="Вывести историю состояний")]
     ],
     resize_keyboard=True,
     input_field_placeholder="юпийо"
