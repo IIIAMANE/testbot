@@ -51,6 +51,10 @@ class MainApp(App):
 
         self.load_user_ids()
 
+        # Flag to control message polling
+        self.polling_thread = None
+        self.current_user_id = None  # Track the current user ID
+
         # Start polling for new users and messages
         self.start_user_polling()
 
@@ -71,9 +75,20 @@ class MainApp(App):
         if not user_id or user_id == "Select User ID":
             return
 
+        # If the selected user is the same, do nothing
+        if self.current_user_id == user_id:
+            return
+
+        # Update current user id
+        self.current_user_id = user_id
+
+        # Stop the current polling thread if it's active
+        if self.polling_thread:
+            self.polling_thread = None
+
         def poll_messages():
             last_timestamp = None
-            while True:
+            while self.current_user_id == user_id:  # Only poll if the user hasn't changed
                 try:
                     params = {"since": last_timestamp} if last_timestamp else {}
                     response = requests.get(f"http://192.168.1.4:8000/messages/{user_id}", params=params)
@@ -84,7 +99,7 @@ class MainApp(App):
                             new_messages = "\n".join(
                                 [f"[{msg['timestamp']}] {msg['text']}" for msg in messages]
                             )
-                            # Используем Clock.schedule_once для обновления UI в основном потоке
+                            # Schedule the update to be done in the main thread
                             Clock.schedule_once(lambda dt: self.update_messages(new_messages))
                     else:
                         self.messages_label.text = f"Error loading messages: {response.status_code}"
@@ -93,8 +108,9 @@ class MainApp(App):
 
                 time.sleep(2)  # Poll every 2 seconds (you can adjust this)
 
-        # Run polling in a separate thread to avoid blocking the main UI
-        Thread(target=poll_messages, daemon=True).start()
+        # Start polling in a separate thread to avoid blocking the main UI
+        self.polling_thread = Thread(target=poll_messages, daemon=True)
+        self.polling_thread.start()
 
     def update_messages(self, new_messages):
         """ Обновляет текст метки с новыми сообщениями """
