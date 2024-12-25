@@ -97,7 +97,7 @@ class MainApp(App):
                         if messages:
                             last_timestamp = messages[-1]["timestamp"]
                             new_messages = "\n".join(
-                                [f"[{msg['timestamp']}] {msg['text']}" for msg in messages]
+                                [f"[{msg['sender_type']}] [{msg['timestamp']}] {msg['text']}" for msg in messages]
                             )
                             # Schedule the update to be done in the main thread
                             Clock.schedule_once(lambda dt: self.update_messages(new_messages))
