@@ -1,8 +1,6 @@
-# .venv\Scripts\activate
-# python main.py
-# git add . 
-# git commit -m "commit"
-# git push
+# uvicorn server:app --host 0.0.0.0 --port 8000
+# python .\main.py
+# python .\KivyTgApp.py
 
 import os
 import asyncio

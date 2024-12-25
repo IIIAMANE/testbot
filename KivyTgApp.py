@@ -1,4 +1,3 @@
-# --- Kivy application code ---
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -6,8 +5,8 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.spinner import Spinner
+from kivy.clock import Clock  # Импортируем Clock для планирования задач в основном потоке
 import requests
-
 import time
 from threading import Thread
 
@@ -52,6 +51,9 @@ class MainApp(App):
 
         self.load_user_ids()
 
+        # Start polling for new users and messages
+        self.start_user_polling()
+
         return self.layout
 
     def load_user_ids(self):
@@ -82,7 +84,8 @@ class MainApp(App):
                             new_messages = "\n".join(
                                 [f"[{msg['timestamp']}] {msg['text']}" for msg in messages]
                             )
-                            self.messages_label.text = new_messages
+                            # Используем Clock.schedule_once для обновления UI в основном потоке
+                            Clock.schedule_once(lambda dt: self.update_messages(new_messages))
                     else:
                         self.messages_label.text = f"Error loading messages: {response.status_code}"
                 except Exception as e:
@@ -92,6 +95,10 @@ class MainApp(App):
 
         # Run polling in a separate thread to avoid blocking the main UI
         Thread(target=poll_messages, daemon=True).start()
+
+    def update_messages(self, new_messages):
+        """ Обновляет текст метки с новыми сообщениями """
+        self.messages_label.text = new_messages
 
     def send_message(self, instance):
         user_id = self.user_spinner.text
@@ -118,6 +125,36 @@ class MainApp(App):
                 self.messages_label.text = f"Error sending message: {response.status_code}"
         except Exception as e:
             self.messages_label.text = f"Error: {str(e)}"
+
+    def start_user_polling(self):
+        """ Start polling for new users in the background """
+        def poll_users():
+            previous_user_ids = set()  # Сохраняем предыдущий список пользователей
+            while True:
+                try:
+                    response = requests.get("http://192.168.1.4:8000/users")
+                    if response.status_code == 200:
+                        user_ids = response.json()
+                        user_ids_set = set(user_ids)  # Преобразуем список в множество для быстрого сравнения
+                        
+                        # Если новый список пользователей отличается от предыдущего
+                        if user_ids_set != previous_user_ids:
+                            previous_user_ids = user_ids_set
+                            # Обновляем список пользователей в спиннере
+                            Clock.schedule_once(lambda dt: self.update_user_spinner(user_ids))
+                    else:
+                        self.messages_label.text = f"Error loading user IDs: {response.status_code}"
+                except Exception as e:
+                    self.messages_label.text = f"Error: {str(e)}"
+
+                time.sleep(5)  # Poll every 5 seconds (you can adjust this)
+
+        # Run polling in a separate thread to avoid blocking the main UI
+        Thread(target=poll_users, daemon=True).start()
+
+    def update_user_spinner(self, user_ids):
+        """ Обновляет значения в спиннере пользователей, если они изменились """
+        self.user_spinner.values = [str(uid) for uid in user_ids]
 
 if __name__ == "__main__":
     MainApp().run()
