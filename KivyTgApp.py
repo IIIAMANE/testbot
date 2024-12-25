@@ -8,6 +8,9 @@ from kivy.uix.button import Button
 from kivy.uix.spinner import Spinner
 import requests
 
+import time
+from threading import Thread
+
 class MainApp(App):
     def build(self):
         self.layout = BoxLayout(orientation='vertical')
@@ -63,20 +66,32 @@ class MainApp(App):
             self.messages_label.text = f"Error: {str(e)}"
 
     def load_messages(self, spinner, user_id):
-        try:
-            response = requests.get(f"http://192.168.1.4:8000/messages/{user_id}")
-            if response.status_code == 200:
-                messages = response.json()
-                if not messages:
-                    self.messages_label.text = "No messages found."
-                else:
-                    self.messages_label.text = "\n".join(
-                        [f"[{msg['timestamp']}] {msg['text']}" for msg in messages]
-                    )
-            else:
-                self.messages_label.text = f"Error loading messages: {response.status_code}"
-        except Exception as e:
-            self.messages_label.text = f"Error: {str(e)}"
+        if not user_id or user_id == "Select User ID":
+            return
+
+        def poll_messages():
+            last_timestamp = None
+            while True:
+                try:
+                    params = {"since": last_timestamp} if last_timestamp else {}
+                    response = requests.get(f"http://192.168.1.4:8000/messages/{user_id}", params=params)
+                    if response.status_code == 200:
+                        messages = response.json()
+                        if messages:
+                            last_timestamp = messages[-1]["timestamp"]
+                            new_messages = "\n".join(
+                                [f"[{msg['timestamp']}] {msg['text']}" for msg in messages]
+                            )
+                            self.messages_label.text = new_messages
+                    else:
+                        self.messages_label.text = f"Error loading messages: {response.status_code}"
+                except Exception as e:
+                    self.messages_label.text = f"Error: {str(e)}"
+
+                time.sleep(2)  # Poll every 2 seconds (you can adjust this)
+
+        # Run polling in a separate thread to avoid blocking the main UI
+        Thread(target=poll_messages, daemon=True).start()
 
     def send_message(self, instance):
         user_id = self.user_spinner.text
@@ -99,7 +114,6 @@ class MainApp(App):
             if response.status_code == 200:
                 self.messages_label.text = "Message sent successfully!"
                 self.message_input.text = ""
-                self.load_messages(None, user_id)
             else:
                 self.messages_label.text = f"Error sending message: {response.status_code}"
         except Exception as e:
