@@ -26,6 +26,7 @@ class MessageResponse(BaseModel):
     message_id: int
     text: str
     timestamp: str
+    sender_type: str
 
     class Config:
         orm_mode = True
@@ -61,7 +62,8 @@ async def send_message(data: MessageData):
         tg_id=data.user_id,
         message_id=sent_message.message_id,
         text=data.message,
-        timestamp=timestamp
+        timestamp=timestamp,
+        sender_type="bot"
     )
 
     return {"status": "success", "message": "Message sent and saved!"}

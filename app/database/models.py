@@ -42,6 +42,7 @@ class Message(Base):
     message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
+    sender_type: Mapped[str] = mapped_column(String, nullable=False)
 
 
 async def async_main():

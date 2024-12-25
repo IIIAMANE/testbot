@@ -89,8 +89,8 @@ async def save_user_state(tg_id: int, rate: str) -> None:
         await session.commit()
 
 
-async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: datetime) -> None:
+async def save_user_message(tg_id: int, message_id: int, text: str, timestamp: datetime, sender_type: str = "user") -> None:
     async with async_session() as session:
-        new_message = Message(tg_id=tg_id, message_id=message_id, text=text, timestamp=timestamp)
+        new_message = Message(tg_id=tg_id, message_id=message_id, text=text, timestamp=timestamp, sender_type=sender_type)
         session.add(new_message)
         await session.commit()
