@@ -1,49 +1,67 @@
+# --- FastAPI server code ---
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
-from app.database.models import Message, async_session  # Импортируем модель Message и сессию async_session
+from app.database.models import Message, async_session
 from aiogram import Bot
 import os
+from datetime import datetime, timezone
+from app.database.requests import save_user_message
 
-# Инициализация FastAPI
+# Initialize FastAPI
 app = FastAPI()
 token = os.getenv("TOKEN")
 bot = Bot(token=token)
 
-# Модель данных для запроса
+# Request data model
 class MessageData(BaseModel):
     user_id: int
     message: str
 
-# Модель данных для ответа (Message) на запрос
+# Response data model for messages
 class MessageResponse(BaseModel):
     id: int
     tg_id: int
     message_id: int
     text: str
-    timestamp: str  # Ожидаем, что timestamp уже будет строкой
+    timestamp: str
 
     class Config:
-        orm_mode = True  # Это нужно для сериализации SQLAlchemy объектов в JSON
+        orm_mode = True
 
-# Функция для получения сессии базы данных
+# Dependency to get database session
 async def get_db():
     async with async_session() as session:
         yield session
 
-# Маршрут для получения всех сообщений из базы данных
-@app.get("/messages", response_model=list[MessageResponse])
-async def get_messages(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Message))
+# Route to get a list of unique user IDs
+@app.get("/users", response_model=list[int])
+async def get_users(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Message.tg_id).distinct())
+    return [row[0] for row in result.all()]
+
+# Route to get messages for a specific user
+@app.get("/messages/{user_id}", response_model=list[MessageResponse])
+async def get_user_messages(user_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Message).where(Message.tg_id == user_id))
     messages = result.scalars().all()
     for message in messages:
-        message.timestamp = message.timestamp.isoformat()  # Преобразуем datetime в строку
+        message.timestamp = message.timestamp.isoformat()
     return messages
 
-# Маршрут для отправки сообщений через бота
+# Route to send a message and save it to the database
 @app.post("/send_message")
 async def send_message(data: MessageData):
-    await bot.send_message(chat_id=data.user_id, text=data.message)
-    return {"status": "success", "message": "Сообщение отправлено!"}
+    timestamp = datetime.now(timezone.utc)
 
+    sent_message = await bot.send_message(chat_id=data.user_id, text=data.message)
+
+    await save_user_message(
+        tg_id=data.user_id,
+        message_id=sent_message.message_id,
+        text=data.message,
+        timestamp=timestamp
+    )
+
+    return {"status": "success", "message": "Message sent and saved!"}
