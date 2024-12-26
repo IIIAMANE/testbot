@@ -9,6 +9,9 @@ from kivy.clock import Clock  # Импортируем Clock для планир
 import requests
 import time
 from threading import Thread
+from kivy.core.window import Window
+
+Window.size = (400, 800)
 
 class MainApp(App):
     def build(self):
