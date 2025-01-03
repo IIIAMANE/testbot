@@ -1,12 +1,16 @@
-# бля если честно я даж не ебу какой функционал дальше делать.. я вот чат сделал и это ахуеть как круто
 # ну ваще как будто аву можно парсить
 # время сделать
 # оценку состояния сделать в троеточии
 # комменты чекнуть в троеточии
+# фиксануть комм, где тест выходит за поле и поле, как в тг не увеличивается
+# аватарки круглыми сделать
 
+import os
+from io import BytesIO
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivymd.app import MDApp
+from kivy.core.image import Image as CoreImage
 from kivymd.uix.list import MDList, MDListItem, MDListItemHeadlineText, MDListItemSupportingText
 from kivy.core.window import Window
 from kivy.uix.image import Image
@@ -154,9 +158,35 @@ MDScreen:
 
 id_list = requests.get("http://192.168.1.4:8000/users").json()
 
+def get_user_avatar(user_id):
+    token = os.getenv("TOKEN")
+    
+    # Запрос фотографий профиля
+    response = requests.get(f"https://api.telegram.org/bot{token}/getUserProfilePhotos?user_id={user_id}")
+    photos_data = response.json()
+    
+    if not photos_data.get("ok") or photos_data["result"]["total_count"] == 0:
+        return None  # У пользователя нет аватарок
+    
+    # Извлекаем file_id первой аватарки
+    file_id = photos_data["result"]["photos"][0][0]["file_id"]
+    
+    # Получаем информацию о файле
+    file_response = requests.get(f"https://api.telegram.org/bot{token}/getFile?file_id={file_id}")
+    file_data = file_response.json()
+    
+    if not file_data.get("ok"):
+        return None  # Ошибка получения информации о файле
+    
+    # Формируем прямой URL к аватарке
+    file_path = file_data["result"]["file_path"]
+    avatar_url = f"https://api.telegram.org/file/bot{token}/{file_path}"
+    
+    return avatar_url
+
+
 class MyMessage(MDLabel):
     font_size = 17
-
 
 class Response(MDLabel):
     font_size = 17
@@ -171,8 +201,24 @@ class Demo1(Screen):
         for user_id in id_list:
             item = MDListItem()
 
-            image_path = "avatar.jpg"
-            image = Image(source=image_path, size_hint=(None, None), size=(48, 48))
+            url_avatar = get_user_avatar(user_id)
+
+            if url_avatar == None:
+                image_path = "avatar.jpg"
+                image = Image(source=image_path, size_hint=(None, None), size=(48, 48))
+
+            elif url_avatar != None:
+                response = requests.get(url_avatar)
+                if response.status_code == 200:
+                    data = BytesIO(response.content)
+                    core_image = CoreImage(data, ext="jpg")  # Убедитесь, что формат соответствует загружаемому
+                    image = Image(texture=core_image.texture, size_hint=(None, None), size=(48, 48))
+                else:
+                    # В случае ошибки используем изображение по умолчанию
+                    image_path = "avatar.jpg"
+                    image = Image(source=image_path, size_hint=(None, None), size=(48, 48))
+
+
 
             headline = MDListItemHeadlineText(text=f"{user_id}")
             supporting_line_text = MDListItemSupportingText(text="Последнее сообщение")
