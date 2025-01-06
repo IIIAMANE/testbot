@@ -1,22 +1,15 @@
-# ну ваще как будто аву можно парсить
-# время сделать
-# оценку состояния сделать в троеточии
-# комменты чекнуть в троеточии
-# фиксануть комм, где тест выходит за поле и поле, как в тг не увеличивается
-# аватарки круглыми сделать
-
 import os
+import requests
 from io import BytesIO
+from typing import Optional
+from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.clock import Clock
-from kivymd.app import MDApp
-from kivy.core.image import Image as CoreImage
-from kivymd.uix.list import MDList, MDListItem, MDListItemHeadlineText, MDListItemSupportingText
 from kivy.core.window import Window
+from kivy.core.image import Image as CoreImage
+from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDListItemSupportingText
 from kivy.uix.image import Image
-
 from kivymd.uix.label import MDLabel
-import requests
 from kivy.uix.screenmanager import ScreenManager, Screen
 
 KV = '''
@@ -158,32 +151,27 @@ MDScreen:
 
 id_list = requests.get("http://192.168.1.4:8000/users").json()
 
-def get_user_avatar(user_id):
+def get_user_avatar(user_id: int) -> Optional[str]:
     token = os.getenv("TOKEN")
     
-    # Запрос фотографий профиля
     response = requests.get(f"https://api.telegram.org/bot{token}/getUserProfilePhotos?user_id={user_id}")
     photos_data = response.json()
     
     if not photos_data.get("ok") or photos_data["result"]["total_count"] == 0:
-        return None  # У пользователя нет аватарок
+        return None
     
-    # Извлекаем file_id первой аватарки
     file_id = photos_data["result"]["photos"][0][0]["file_id"]
     
-    # Получаем информацию о файле
     file_response = requests.get(f"https://api.telegram.org/bot{token}/getFile?file_id={file_id}")
     file_data = file_response.json()
     
     if not file_data.get("ok"):
-        return None  # Ошибка получения информации о файле
+        return None
     
-    # Формируем прямой URL к аватарке
     file_path = file_data["result"]["file_path"]
     avatar_url = f"https://api.telegram.org/file/bot{token}/{file_path}"
     
     return avatar_url
-
 
 class MyMessage(MDLabel):
     font_size = 17
@@ -211,17 +199,21 @@ class Demo1(Screen):
                 response = requests.get(url_avatar)
                 if response.status_code == 200:
                     data = BytesIO(response.content)
-                    core_image = CoreImage(data, ext="jpg")  # Убедитесь, что формат соответствует загружаемому
+                    core_image = CoreImage(data, ext="jpg")
                     image = Image(texture=core_image.texture, size_hint=(None, None), size=(48, 48))
                 else:
-                    # В случае ошибки используем изображение по умолчанию
                     image_path = "avatar.jpg"
                     image = Image(source=image_path, size_hint=(None, None), size=(48, 48))
 
 
 
             headline = MDListItemHeadlineText(text=f"{user_id}")
-            supporting_line_text = MDListItemSupportingText(text="Последнее сообщение")
+            get_messages_request = requests.get(f"http://192.168.1.4:8000/messages/{user_id}")
+            if get_messages_request.status_code == 200:
+                last_message_text = get_messages_request.json()[-1]['text']
+            else:
+                last_message_text = "пример ласт сообщения"
+            supporting_line_text = MDListItemSupportingText(text=last_message_text)
 
             item.on_release = lambda user_id = user_id: self.on_chat_click(user_id)
 
@@ -240,7 +232,7 @@ class Demo1(Screen):
 class Demo2(Screen):
     def on_pre_enter(self, *args):
         """Запускает автообновление при входе на экран."""
-        self.event = Clock.schedule_interval(self.update_chat, 5)  # Каждые 5 секунд
+        self.event = Clock.schedule_interval(self.update_chat, 5)
 
     def on_leave(self, *args):
         """Останавливает автообновление при выходе с экрана."""
@@ -249,7 +241,7 @@ class Demo2(Screen):
 
     def update_chat(self, dt):
         """Метод для обновления чата."""
-        user_id = self.ids.AppBarUserId.text  # Получаем текущий user_id из AppBar
+        user_id = self.ids.AppBarUserId.text
         self.update_for_chat_screen(user_id)
 
     def update_for_chat_screen(self, user_id):
